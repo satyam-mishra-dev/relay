@@ -24,7 +24,8 @@ STOPWORDS = {
 
 
 def clean(text):
-    return WHITESPACE.sub(" ", URL.sub(" ", MENTION.sub(" ", html.unescape(str(text))))).strip()
+    text = URL.sub("<link>", MENTION.sub(" ", html.unescape(str(text))))
+    return WHITESPACE.sub(" ", text).strip()
 
 
 def is_english(text):

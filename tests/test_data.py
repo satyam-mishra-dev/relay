@@ -18,7 +18,7 @@ def test_threads_and_stats():
     t = threads(pd.read_csv(io.StringIO(CSV)))
     assert list(t["id"]) == [1, 4]
     row = t[t["id"] == 1].iloc[0]
-    assert row["customer"] == "my app crashes & I can't log in"
+    assert row["customer"] == "my app crashes & I can't log in <link>"
     assert row["brand_reply"] == "Sorry! Please reinstall the app and try again."
     assert row["followup_1"] == "still broken"
     stats = brand_stats(t)
