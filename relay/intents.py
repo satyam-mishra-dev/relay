@@ -139,7 +139,7 @@ def prompt(text):
         + "\n".join(shots)
         + '\n\nAnswer with JSON only: {"intent": "<name>", "confidence": <0-1>}'
     )
-    return {"system": system, "user": text, "model": "sonnet", "max_tokens": 60}
+    return {"system": system, "user": text, "model": "sonnet", "max_tokens": 200}
 
 
 def classify_llm(texts):

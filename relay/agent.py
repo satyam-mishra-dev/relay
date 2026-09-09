@@ -57,7 +57,7 @@ def user_prompt(text, evidence):
 
 def handle(text, built=None):
     evidence = similar(text, 5, built)
-    raw = complete(system_prompt(), user_prompt(text, evidence), "sonnet", max_tokens=400)
+    raw = complete(system_prompt(), user_prompt(text, evidence), "sonnet", max_tokens=600)
     parsed = parse_json(raw)
     ids = [e["id"] for e in evidence]
     if not parsed or not parsed.get("reply"):
