@@ -1,17 +1,18 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 API_MODELS = {"sonnet": "claude-sonnet-5", "opus": "claude-opus-5"}
 
-CACHE_DIR = Path(os.environ.get("RELAY_CACHE_DIR", "data/cache"))
+CACHE_DIR = Path("data/cache")
 
 
 def _key(model, system, user):
-    return hashlib.sha256((model + system + user).encode()).hexdigest()[:24]
+    return hashlib.sha256("\x00".join((model, system, user)).encode()).hexdigest()[:24]
 
 
 def _api(system, user, model, max_tokens):
@@ -30,7 +31,7 @@ def _cli(system, user, model, max_tokens):
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
     out = subprocess.run(
         [
-            "claude", "-p", user,
+            "claude", "-p",
             "--model", model,
             "--system-prompt", system,
             "--output-format", "json",
@@ -38,7 +39,7 @@ def _cli(system, user, model, max_tokens):
             "--no-session-persistence",
             "--strict-mcp-config",
         ],
-        capture_output=True, text=True, env=env, check=True, timeout=300,
+        input=user, capture_output=True, text=True, env=env, check=True, timeout=300,
     )
     return json.loads(out.stdout)["result"]
 
@@ -64,3 +65,13 @@ def complete(system: str, user: str, model: str, max_tokens: int = 800) -> str:
 def complete_many(jobs: list[dict]) -> list[str]:
     with ThreadPoolExecutor(max_workers=6) as pool:
         return list(pool.map(lambda j: complete(**j), jobs))
+
+
+def parse_json(text):
+    match = re.search(r"\{.*\}", text, re.S)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError:
+        return None

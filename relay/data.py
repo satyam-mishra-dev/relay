@@ -29,7 +29,7 @@ def clean(text):
 
 
 def is_english(text):
-    chars = [c for c in text if not c.isspace()]
+    chars = [c for c in text if not c.isspace() and ord(c) < 0x2000]
     if len(chars) < 5:
         return False
     ascii_share = sum(c.isascii() for c in chars) / len(chars)
@@ -41,13 +41,19 @@ def is_substantive(reply):
 
 
 def load(path=RAW):
-    df = pd.read_csv(path, dtype={"author_id": "string", "text": "string"})
+    df = pd.read_csv(
+        path,
+        dtype={"author_id": "string", "text": "string"},
+        encoding="utf-8",
+        encoding_errors="replace",
+    )
     df["tweet_id"] = pd.to_numeric(df["tweet_id"], errors="coerce")
     df["in_response_to_tweet_id"] = pd.to_numeric(df["in_response_to_tweet_id"], errors="coerce")
-    return df.dropna(subset=["tweet_id", "text"]).sort_values("tweet_id")
+    return df.dropna(subset=["tweet_id", "text"])
 
 
 def threads(df):
+    df = df.drop_duplicates("tweet_id").sort_values("tweet_id")
     outbound = df[~df["inbound"]].drop_duplicates("in_response_to_tweet_id")
     any_reply = df.dropna(subset=["in_response_to_tweet_id"]).drop_duplicates(
         "in_response_to_tweet_id"
@@ -74,7 +80,7 @@ def threads(df):
             right_on="parent" + step,
             how="left",
         )
-    return pd.DataFrame(
+    built = pd.DataFrame(
         {
             "id": t["tweet_id"].astype("int64"),
             "brand": t["author_id_b"],
@@ -85,6 +91,7 @@ def threads(df):
             "created_at": pd.to_datetime(t["created_at"], format="%a %b %d %H:%M:%S %z %Y"),
         }
     )
+    return built[(built["customer"].str.len() > 0) & (built["brand_reply"].str.len() > 0)]
 
 
 def brand_stats(t):
@@ -149,3 +156,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def corpus(path=OUT, split=SPLIT):
+    cutoff = json.loads(split.read_text())["pool_starts_at"]
+    return [r for r in read(path) if r["created_at"] < cutoff]
+
+
+def pool(path=OUT, split=SPLIT):
+    cutoff = json.loads(split.read_text())["pool_starts_at"]
+    return [r for r in read(path) if r["created_at"] >= cutoff]
