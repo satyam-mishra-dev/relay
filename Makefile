@@ -8,7 +8,7 @@ eval:
 	uv run python -m relay.evaluate
 
 reproduce:
-	uv run python -m relay.evaluate
+	RELAY_OFFLINE=1 uv run python -m relay.evaluate
 
 test:
 	uv run pytest -q

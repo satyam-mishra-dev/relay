@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -72,7 +73,7 @@ def _api(system, user, model, max_tokens):
 
 
 def _cli(system, user, model, max_tokens):
-    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "ANTHROPIC_API_KEY")}
     out = subprocess.run(
         [
             "claude", "-p",
@@ -99,10 +100,13 @@ def complete(system: str, user: str, model: str, max_tokens: int = 800) -> str:
     path = CACHE_DIR / f"{_key(model, system, user)}.json"
     if path.exists():
         return json.loads(path.read_text())["text"]
+    if os.environ.get("RELAY_OFFLINE"):
+        raise RuntimeError(f"offline mode: no cached response for {path.name} ({model})")
     call = backend()
     try:
         text = call(system, user, model, max_tokens)
     except Exception:
+        time.sleep(5)
         text = call(system, user, model, max_tokens)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"model": model, "system": system, "user": user, "text": text}))
