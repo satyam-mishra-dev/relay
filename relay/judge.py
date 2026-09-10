@@ -112,17 +112,22 @@ def parse_winner(raw):
     return winner if winner in ("A", "B") else "TIE"
 
 
-def compare_many(items):
+def compare_details(items):
     jobs = []
     for customer, evidence, a, b in items:
         jobs.append(pairwise_job(customer, evidence, a, b))
         jobs.append(pairwise_job(customer, evidence, b, a))
     raw = [parse_winner(r) for r in complete_many(jobs)]
-    out = []
-    for first, second in zip(raw[0::2], raw[1::2], strict=True):
-        flipped = {"A": "B", "B": "A", "TIE": "TIE"}[second]
-        out.append(first.lower() if first == flipped and first != "TIE" else "tie")
-    return [{"a": "A", "b": "B", "tie": "tie"}[v] for v in out]
+    return list(zip(raw[0::2], raw[1::2], strict=True))
+
+
+def agreed(first, second):
+    return first if first == {"A": "B", "B": "A", "TIE": "TIE"}[second] else "TIE"
+
+
+def compare_many(items):
+    verdicts = [agreed(first, second) for first, second in compare_details(items)]
+    return [v if v in ("A", "B") else "tie" for v in verdicts]
 
 
 def compare(customer, evidence, a, b):

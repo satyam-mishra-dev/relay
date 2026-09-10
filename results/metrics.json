@@ -166,6 +166,25 @@
       }
     }
   },
+  "judge": {
+    "exact_agreement": 0.2857,
+    "human_mean": {
+      "agent": 4.1017,
+      "nearest_reply": 2.1
+    },
+    "judge_mean": {
+      "agent": 4.2839,
+      "nearest_reply": 3.8208
+    },
+    "pairwise_order_flip_rate": 0.04,
+    "quadratic_kappa": 0.4546,
+    "rated_rows": 60,
+    "scored_replies": 119,
+    "self_consistency_kappa": 0.8235,
+    "self_consistency_rows": 30,
+    "spearman": 0.639,
+    "within_one_agreement": 0.7647
+  },
   "reply": {
     "agent": {
       "grounded": 4.2843,

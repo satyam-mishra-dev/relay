@@ -3,16 +3,20 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from sklearn.metrics import f1_score, precision_recall_fscore_support
+from sklearn.metrics import cohen_kappa_score, f1_score, precision_recall_fscore_support
 
 from relay.agent import MIN_EVIDENCE_SCORE, SENSITIVE
 from relay.data import corpus, is_english
 from relay.golden import AGENT_OUTPUTS, read_jsonl, write_jsonl
 from relay.intents import CLASSIFIERS, weak_training_set
-from relay.judge import compare_many, evidence_for, score_many
+from relay.judge import agreed, compare_details, evidence_for, score_many
 from relay.retrieve import index, similar
 
 GOLDEN = Path("data/golden/golden.jsonl")
+RATINGS = Path("data/golden/reply_ratings.jsonl")
+RATINGS_KEY = Path("data/golden/reply_ratings_key.jsonl")
+HUMAN_RATINGS = Path("data/golden/reply_ratings_human.jsonl")
+SELF_CONSISTENCY = 30
 METRICS = Path("results/metrics.json")
 ERRORS = Path("results/errors.jsonl")
 RESAMPLES = 1000
@@ -112,6 +116,70 @@ def coverage_risk(golden, outputs):
     return curve
 
 
+def average_ranks(values):
+    values = np.asarray(values, dtype=float)
+    ranks = np.empty(len(values), dtype=float)
+    ranks[values.argsort(kind="stable")] = np.arange(len(values), dtype=float)
+    for value in np.unique(values):
+        ranks[values == value] = ranks[values == value].mean()
+    return ranks
+
+
+def spearman(a, b):
+    return float(np.corrcoef(average_ranks(a), average_ranks(b))[0, 1])
+
+
+def kappa(a, b):
+    return float(cohen_kappa_score(a, b, weights="quadratic"))
+
+
+def judge_validation(built, flip_rate):
+    sheet = sorted(read_jsonl(RATINGS), key=lambda r: r["id"])
+    agent_side = {r["id"]: r["agent_is"] for r in read_jsonl(RATINGS_KEY)}
+    human_rows = {r["id"]: r for r in read_jsonl(HUMAN_RATINGS)}
+    items, human, systems = [], [], []
+    for row in sheet:
+        evidence = evidence_for(row["customer"], built)
+        for side in ("a", "b"):
+            items.append((row["customer"], evidence, row[f"reply_{side}"]))
+            human.append(int(round(human_rows[row["id"]][f"score_{side}"])))
+            systems.append("agent" if agent_side[row["id"]] == side else "nearest_reply")
+    scored = score_many(items)
+    kept = [(h, s["overall"], sys) for h, s, sys in zip(human, scored, systems, strict=True) if s]
+    human_kept = [h for h, _, _ in kept]
+    judge_kept = [j for _, j, _ in kept]
+    rounded = [int(round(j)) for j in judge_kept]
+    strict = score_many(items[:SELF_CONSISTENCY], suffix="\n\nBe strict.")
+    pairs = [
+        (int(round(a["overall"])), int(round(b["overall"])))
+        for a, b in zip(scored[:SELF_CONSISTENCY], strict, strict=True)
+        if a and b
+    ]
+    return {
+        "rated_rows": len(sheet),
+        "scored_replies": len(kept),
+        "spearman": spearman(human_kept, judge_kept),
+        "quadratic_kappa": kappa(human_kept, rounded),
+        "exact_agreement": float(
+            np.mean([h == j for h, j in zip(human_kept, rounded, strict=True)])
+        ),
+        "within_one_agreement": float(
+            np.mean([abs(h - j) <= 1 for h, j in zip(human_kept, rounded, strict=True)])
+        ),
+        "human_mean": {
+            system: float(np.mean([h for h, _, s in kept if s == system]))
+            for system in ("agent", "nearest_reply")
+        },
+        "judge_mean": {
+            system: float(np.mean([j for _, j, s in kept if s == system]))
+            for system in ("agent", "nearest_reply")
+        },
+        "self_consistency_kappa": kappa([a for a, _ in pairs], [b for _, b in pairs]),
+        "self_consistency_rows": len(pairs),
+        "pairwise_order_flip_rate": flip_rate,
+    }
+
+
 def round_floats(value, places=4):
     if isinstance(value, float):
         return round(value, places)
@@ -159,16 +227,18 @@ def main():
         "nearest_reply": nearest,
     }
     reply, scored = reply_block(golden, evidence, replies)
-    verdicts = compare_many(
+    details = compare_details(
         [
             (g["customer"], evidence[g["id"]], replies["agent"][g["id"]], nearest[g["id"]])
             for g in golden
         ]
     )
+    verdicts = [agreed(first, second) for first, second in details]
+    flip_rate = float(np.mean([agreed(f, s) == "TIE" and f != "TIE" for f, s in details]))
     reply["pairwise_agent_vs_nearest_reply"] = {
         "win": verdicts.count("A"),
         "loss": verdicts.count("B"),
-        "tie": verdicts.count("tie"),
+        "tie": verdicts.count("TIE"),
     }
 
     confusion = Counter((t, p) for t, p in zip(truth, predictions["agent"], strict=True) if t != p)
@@ -180,6 +250,7 @@ def main():
         "triage": triage,
         "reply": reply,
         "coverage_risk": coverage_risk(golden, outputs),
+        "judge": judge_validation(built, flip_rate),
         "top_confusions": [
             {"truth": t, "predicted": p, "count": n}
             for (t, p), n in sorted(confusion.items(), key=lambda kv: (-kv[1], kv[0]))
