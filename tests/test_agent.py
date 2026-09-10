@@ -43,3 +43,6 @@ def test_hard_rules_override_the_model(monkeypatch):
 
     broken = run("my show keeps buffering", monkeypatch, "not json at all")
     assert (broken["action"], broken["reason"]) == ("escalate", "unparseable")
+
+    empty = json.dumps({"intent": "other", "confidence": 0.9, "reply": "", "action": "auto"})
+    assert run("go team", monkeypatch, empty)["reason"] == "empty_reply"

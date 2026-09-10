@@ -60,12 +60,12 @@ def handle(text, built=None):
     raw = complete(system_prompt(), user_prompt(text, evidence), "sonnet", max_tokens=600)
     parsed = parse_json(raw)
     ids = [e["id"] for e in evidence]
-    if not parsed or not parsed.get("reply"):
+    if not parsed:
         return escalated("other", 0.0, "", "unparseable", ids)
     intent = parsed.get("intent") if parsed.get("intent") in TAXONOMY else "other"
     confidence = float(parsed.get("confidence") or 0.0)
-    reply = str(parsed["reply"]).strip()
-    reason = override(text, intent, confidence, parsed.get("action"), evidence)
+    reply = str(parsed.get("reply") or "").strip()
+    reason = override(text, reply, intent, confidence, parsed.get("action"), evidence)
     if reason:
         return escalated(intent, confidence, reply, reason, ids)
     return {
@@ -78,9 +78,11 @@ def handle(text, built=None):
     }
 
 
-def override(text, intent, confidence, action, evidence):
+def override(text, reply, intent, confidence, action, evidence):
     if SENSITIVE.search(text):
         return "sensitive_topic"
+    if not reply:
+        return "empty_reply"
     if not is_english(text):
         return "non_english"
     if evidence[0]["score"] < MIN_EVIDENCE_SCORE:
