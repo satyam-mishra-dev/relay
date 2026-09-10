@@ -6,12 +6,15 @@ from pathlib import Path
 from relay.agent import handle
 from relay.data import pool
 from relay.intents import classify_llm
-from relay.retrieve import index
+from relay.retrieve import index, similar
 
+RATINGS = Path("data/golden/reply_ratings.jsonl")
+RATINGS_KEY = Path("data/golden/reply_ratings_key.jsonl")
 CANDIDATES = Path("data/golden/candidates.jsonl")
 AGENT_OUTPUTS = Path("results/agent_outputs.jsonl")
 STRATIFIED = 120
 UNIFORM = 80
+RATED = 60
 
 
 def write_jsonl(path, rows):
@@ -71,6 +74,31 @@ def main():
         [dict(handle(c["customer"], built), id=c["id"]) for c in candidates],
     )
     print(len(candidates), "candidates")
+
+
+def build_ratings():
+    outputs = {r["id"]: r for r in read_jsonl(AGENT_OUTPUTS)}
+    rng = random.Random(1)
+    picked = round_robin(read_jsonl(CANDIDATES), RATED, rng)
+    built = index()
+    sheet, key = [], []
+    for row in picked.values():
+        neighbours = similar(row["customer"], 3, built)
+        pair = [("agent", outputs[row["id"]]["reply"]), ("nearest", neighbours[0]["brand_reply"])]
+        rng.shuffle(pair)
+        sheet.append(
+            {
+                "id": row["id"],
+                "customer": row["customer"],
+                "evidence_summary": " | ".join(n["brand_reply"] for n in neighbours[1:]),
+                "reply_a": pair[0][1],
+                "reply_b": pair[1][1],
+            }
+        )
+        key.append({"id": row["id"], "agent_is": "a" if pair[0][0] == "agent" else "b"})
+    write_jsonl(RATINGS, sheet)
+    write_jsonl(RATINGS_KEY, key)
+    print(len(sheet), "rating rows")
 
 
 if __name__ == "__main__":
