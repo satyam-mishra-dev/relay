@@ -14,6 +14,9 @@ Score four dimensions 1-5 each. Length is not quality: a short reply that correc
 clarifying question can score 5 on resolves if that is what the evidence shows the brand doing \
 for this kind of issue.
 
+A reply addressed to a different customer's name, or about a different title, device or problem \
+than the one in the tweet, scores 1 on grounded and 1 on resolves regardless of fluency.
+
 grounded - does the candidate's claim/step match what the evidence replies actually did?
 1: states a fix, policy, or fact no evidence reply supports, or contradicts the evidence.
 3: on-topic and plausible but not traceable to any specific evidence reply's approach.
@@ -51,6 +54,9 @@ well-targeted clarifying question can beat a longer non-answer), tone (brand voi
 asks clarifying device/error questions, points to help via <link>), safe (no invented policy, no \
 promised outcome, no public request for sensitive data).
 
+A reply addressed to a different customer's name, or about a different title, device or problem \
+than the one in the tweet, scores 1 on grounded and 1 on resolves regardless of fluency.
+
 Ignore the order A/B was presented in and ignore length - a shorter correct reply beats a longer \
 vague one. Ties are allowed and preferred over a forced pick when the two are equivalent on all \
 four dimensions.
@@ -60,7 +66,7 @@ Output strict JSON only, no prose outside it:
 
 
 def evidence_for(customer, built):
-    return [hit["brand_reply"] for hit in similar(customer, 3, built)]
+    return [hit["brand_reply"] for hit in similar(customer, 4, built)[1:]]
 
 
 def shown(customer, evidence):
