@@ -109,7 +109,9 @@ def complete(system: str, user: str, model: str, max_tokens: int = 800) -> str:
         time.sleep(5)
         text = call(system, user, model, max_tokens)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"model": model, "system": system, "user": user, "text": text}))
+    staged = path.with_suffix(f".{os.getpid()}-{threading.get_ident()}.tmp")
+    staged.write_text(json.dumps({"model": model, "system": system, "user": user, "text": text}))
+    os.replace(staged, path)
     return text
 
 
