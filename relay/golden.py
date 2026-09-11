@@ -52,6 +52,15 @@ def sample(rows, rng):
     return list(picked.values())
 
 
+def agent_outputs(candidates):
+    built = index()
+    write_jsonl(AGENT_OUTPUTS, [dict(handle(c["customer"], built), id=c["id"]) for c in candidates])
+
+
+def refresh():
+    agent_outputs(read_jsonl(CANDIDATES))
+
+
 def main():
     rows = pool()
     labels = classify_llm([r["customer"] for r in rows])
@@ -68,11 +77,7 @@ def main():
     ]
     candidates = sample(labelled, random.Random(0))
     write_jsonl(CANDIDATES, candidates)
-    built = index()
-    write_jsonl(
-        AGENT_OUTPUTS,
-        [dict(handle(c["customer"], built), id=c["id"]) for c in candidates],
-    )
+    agent_outputs(candidates)
     print(len(candidates), "candidates")
 
 

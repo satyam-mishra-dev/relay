@@ -35,20 +35,23 @@ TAXONOMY = {
         'Cues: "I pay for no commercials", "same ad five times an episode".'
     ),
     "content_availability": (
-        "A title already in the catalogue is missing, removed, out of order or blocked locally. "
-        'Cues: "episodes disappeared", "not available in my area".'
+        "A specific title, season or episode the service normally carries is missing, removed, "
+        "mislabelled or wrong (audio, subtitles, order). "
+        'Cues: "episodes disappeared", "the subtitles are for the wrong episode".'
     ),
     "content_request": (
-        "Asks the service to add a show, season, channel or sports feed it does not carry. "
+        "Asks to add a title, season, channel or league the service does not carry. "
         'Cues: "please add season 3", "when will you get NBC".'
     ),
     "product_feedback": (
-        "An opinion about the interface, design or product direction rather than a fault to fix. "
-        'Cues: "the new interface is terrible", "bring back the old app".'
+        "Opinion or request about the product itself, including feature requests such as shuffle, "
+        "skip-intro, mark-as-watched, playlists, interface changes. "
+        'Cues: "the new interface is terrible", "please add a skip intro button".'
     ),
     "feature_question": (
-        "Asks how something works or whether it is possible: plans, devices, settings, live TV. "
-        'Cues: "how do I turn off autoplay", "does it work on Chromecast".'
+        "Asks whether, when, where or how something works or is available: a device, region, "
+        "plan, setting or release timing. "
+        'Cues: "will it be on tonight", "does it work in Canada".'
     ),
     "praise_or_thanks": (
         "Compliments, thanks, or friendly chatter with no request for support. "
