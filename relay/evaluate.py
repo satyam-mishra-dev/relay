@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from sklearn.metrics import cohen_kappa_score, f1_score, precision_recall_fscore_support
 
-from relay.agent import MIN_EVIDENCE_SCORE, SENSITIVE
+from relay.agent import MIN_EVIDENCE_SCORE, hard_reason
 from relay.data import corpus, is_english
 from relay.golden import AGENT_OUTPUTS, read_jsonl, write_jsonl
 from relay.intents import CLASSIFIERS, weak_training_set
@@ -19,7 +19,7 @@ HUMAN_RATINGS = Path("data/golden/reply_ratings_human.jsonl")
 METRICS = Path("results/metrics.json")
 ERRORS = Path("results/errors.jsonl")
 ITERATIONS = Path("results/iterations.json")
-SELF_CONSISTENCY = 30
+CALIBRATION = 30
 RESAMPLES = 1000
 THRESHOLDS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 SPLITS = {"all": None, "dev": "stratified", "test": "uniform"}
@@ -30,8 +30,9 @@ def accuracy(truth, pred):
     return float(np.mean([t == p for t, p in zip(truth, pred, strict=True)]))
 
 
-def macro_f1(truth, pred):
-    return float(f1_score(truth, pred, average="macro", zero_division=0))
+def macro_f1(truth, pred, labels=None):
+    labels = labels if labels is not None else sorted(set(truth))
+    return float(f1_score(truth, pred, average="macro", labels=labels, zero_division=0))
 
 
 def bootstrap(truth, pred, metric):
@@ -52,8 +53,8 @@ def intent_block(truth, predictions):
         out[name] = {
             "accuracy": accuracy(truth, pred),
             "accuracy_ci": bootstrap(truth, pred, accuracy),
-            "macro_f1": macro_f1(truth, pred),
-            "macro_f1_ci": bootstrap(truth, pred, macro_f1),
+            "macro_f1": macro_f1(truth, pred, labels),
+            "macro_f1_ci": bootstrap(truth, pred, lambda t, p: macro_f1(t, p, labels)),
             "per_class_f1": dict(zip(labels, map(float, per_class), strict=True)),
         }
     return out
@@ -76,7 +77,7 @@ def triage_metrics(should_escalate, escalated):
 
 def rules_only(rows, built):
     return [
-        bool(SENSITIVE.search(r["customer"]))
+        hard_reason(r["customer"], "") is not None
         or not is_english(r["customer"])
         or similar(r["customer"], 1, built)[0]["score"] < MIN_EVIDENCE_SCORE
         for r in rows
@@ -135,7 +136,7 @@ def agreement(human, judge):
 
 
 def rating_scores(built):
-    sheet = sorted(read_jsonl(RATINGS), key=lambda r: r["id"])
+    sheet = read_jsonl(RATINGS)
     agent_side = {r["id"]: r["agent_is"] for r in read_jsonl(RATINGS_KEY)}
     human_rows = {r["id"]: r for r in read_jsonl(HUMAN_RATINGS)}
     items, rated = [], []
@@ -152,12 +153,12 @@ def rating_scores(built):
                 }
             )
     scored = score_many(items)
-    strict = score_many(items[:SELF_CONSISTENCY], suffix="\n\nBe strict.")
+    strict = score_many(items[:CALIBRATION], suffix="\n\nBe strict.")
     for entry, score in zip(rated, scored, strict=True):
         entry["judge"] = score["overall"] if score else None
     consistency = [
         (int(round(a["overall"])), int(round(b["overall"])))
-        for a, b in zip(scored[:SELF_CONSISTENCY], strict, strict=True)
+        for a, b in zip(scored[:CALIBRATION], strict, strict=True)
         if a and b
     ]
     return rated, consistency
@@ -169,7 +170,7 @@ def judge_block(rated, consistency, flip_rate):
         return {"scored_replies": 0, "pairwise_order_flip_rate": flip_rate}
     human = [r["human"] for r in kept]
     judge = [r["judge"] for r in kept]
-    holdout = [r for r in kept if r["position"] >= SELF_CONSISTENCY]
+    holdout = [r for r in kept if r["position"] >= CALIBRATION]
     return agreement(human, judge) | {
         "scored_replies": len(kept),
         "holdout": agreement([r["human"] for r in holdout], [r["judge"] for r in holdout]),
@@ -181,8 +182,8 @@ def judge_block(rated, consistency, flip_rate):
             system: float(np.mean([r["judge"] for r in kept if r["system"] == system]))
             for system in ("agent", "nearest_reply")
         },
-        "self_consistency_kappa": kappa([a for a, _ in consistency], [b for _, b in consistency]),
-        "self_consistency_rows": len(consistency),
+        "perturbation_kappa": kappa([a for a, _ in consistency], [b for _, b in consistency]),
+        "perturbation_rows": len(consistency),
         "pairwise_order_flip_rate": flip_rate,
     }
 
