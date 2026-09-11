@@ -1,361 +1,1028 @@
 {
+  "all": {
+    "coverage_risk": [
+      {
+        "auto_coverage": 0.84,
+        "threshold": 0.3,
+        "unsafe_auto_rate": 0.5263
+      },
+      {
+        "auto_coverage": 0.84,
+        "threshold": 0.4,
+        "unsafe_auto_rate": 0.5263
+      },
+      {
+        "auto_coverage": 0.84,
+        "threshold": 0.5,
+        "unsafe_auto_rate": 0.5263
+      },
+      {
+        "auto_coverage": 0.84,
+        "threshold": 0.6,
+        "unsafe_auto_rate": 0.5263
+      },
+      {
+        "auto_coverage": 0.745,
+        "threshold": 0.7,
+        "unsafe_auto_rate": 0.4737
+      },
+      {
+        "auto_coverage": 0.535,
+        "threshold": 0.8,
+        "unsafe_auto_rate": 0.3684
+      },
+      {
+        "auto_coverage": 0.29,
+        "threshold": 0.9,
+        "unsafe_auto_rate": 0.2105
+      }
+    ],
+    "intent": {
+      "agent": {
+        "accuracy": 0.79,
+        "accuracy_ci": [
+          0.735,
+          0.845
+        ],
+        "macro_f1": 0.7981,
+        "macro_f1_ci": [
+          0.7397,
+          0.8457
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.9375,
+          "content_availability": 0.6522,
+          "content_request": 0.72,
+          "device_app_issue": 0.8,
+          "feature_question": 0.4516,
+          "login_access": 0.96,
+          "other": 0.7619,
+          "playback_error": 0.8267,
+          "praise_or_thanks": 0.8571,
+          "product_feedback": 0.8125
+        }
+      },
+      "keywords": {
+        "accuracy": 0.375,
+        "accuracy_ci": [
+          0.315,
+          0.45
+        ],
+        "macro_f1": 0.3777,
+        "macro_f1_ci": [
+          0.3104,
+          0.4371
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.9412,
+          "billing_subscription": 0.6154,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.4,
+          "feature_question": 0.4375,
+          "login_access": 0.4211,
+          "other": 0.1636,
+          "playback_error": 0.5091,
+          "praise_or_thanks": 0.2667,
+          "product_feedback": 0.4
+        }
+      },
+      "llm": {
+        "accuracy": 0.83,
+        "accuracy_ci": [
+          0.775,
+          0.88
+        ],
+        "macro_f1": 0.839,
+        "macro_f1_ci": [
+          0.7824,
+          0.8824
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.9697,
+          "billing_subscription": 0.9091,
+          "content_availability": 0.7234,
+          "content_request": 0.7391,
+          "device_app_issue": 0.9189,
+          "feature_question": 0.6471,
+          "login_access": 1.0,
+          "other": 0.72,
+          "playback_error": 0.8438,
+          "praise_or_thanks": 0.9091,
+          "product_feedback": 0.8485
+        }
+      },
+      "majority": {
+        "accuracy": 0.18,
+        "accuracy_ci": [
+          0.13,
+          0.235
+        ],
+        "macro_f1": 0.0277,
+        "macro_f1_ci": [
+          0.0209,
+          0.0346
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.0,
+          "billing_subscription": 0.0,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.0,
+          "feature_question": 0.0,
+          "login_access": 0.0,
+          "other": 0.0,
+          "playback_error": 0.3051,
+          "praise_or_thanks": 0.0,
+          "product_feedback": 0.0
+        }
+      },
+      "tfidf_lr": {
+        "accuracy": 0.65,
+        "accuracy_ci": [
+          0.59,
+          0.715
+        ],
+        "macro_f1": 0.6113,
+        "macro_f1_ci": [
+          0.5435,
+          0.6728
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.8824,
+          "billing_subscription": 0.7778,
+          "content_availability": 0.6,
+          "content_request": 0.7273,
+          "device_app_issue": 0.5556,
+          "feature_question": 0.5116,
+          "login_access": 0.7692,
+          "other": 0.3333,
+          "playback_error": 0.7164,
+          "praise_or_thanks": 0.1667,
+          "product_feedback": 0.6842
+        }
+      }
+    },
+    "judge": {
+      "exact_agreement": 0.2857,
+      "holdout": {
+        "exact_agreement": 0.2667,
+        "n": 60,
+        "quadratic_kappa": 0.4895,
+        "spearman": 0.677,
+        "within_one_agreement": 0.7333
+      },
+      "human_mean": {
+        "agent": 4.1017,
+        "nearest_reply": 2.1
+      },
+      "judge_mean": {
+        "agent": 4.2839,
+        "nearest_reply": 3.8208
+      },
+      "n": 119,
+      "pairwise_order_flip_rate": 0.04,
+      "quadratic_kappa": 0.4546,
+      "scored_replies": 119,
+      "self_consistency_kappa": 0.8235,
+      "self_consistency_rows": 30,
+      "spearman": 0.639,
+      "within_one_agreement": 0.7647
+    },
+    "reply": {
+      "agent": {
+        "grounded": 4.2843,
+        "overall": 4.3008,
+        "resolves": 3.934,
+        "safe": 4.8477,
+        "scored": 197,
+        "tone": 4.1371
+      },
+      "canned": {
+        "grounded": 1.23,
+        "overall": 1.9675,
+        "resolves": 1.29,
+        "safe": 2.885,
+        "scored": 200,
+        "tone": 2.465
+      },
+      "nearest_reply": {
+        "grounded": 3.9648,
+        "overall": 3.8618,
+        "resolves": 2.9095,
+        "safe": 4.8894,
+        "scored": 199,
+        "tone": 3.6834
+      },
+      "pairwise_agent_vs_nearest_reply": {
+        "loss": 18,
+        "tie": 30,
+        "win": 152
+      }
+    },
+    "rows": 200,
+    "top_confusions": [
+      {
+        "count": 6,
+        "predicted": "content_availability",
+        "truth": "feature_question"
+      },
+      {
+        "count": 5,
+        "predicted": "content_request",
+        "truth": "feature_question"
+      },
+      {
+        "count": 3,
+        "predicted": "content_request",
+        "truth": "content_availability"
+      },
+      {
+        "count": 3,
+        "predicted": "playback_error",
+        "truth": "device_app_issue"
+      },
+      {
+        "count": 3,
+        "predicted": "content_request",
+        "truth": "product_feedback"
+      },
+      {
+        "count": 2,
+        "predicted": "content_availability",
+        "truth": "content_request"
+      },
+      {
+        "count": 2,
+        "predicted": "playback_error",
+        "truth": "feature_question"
+      },
+      {
+        "count": 2,
+        "predicted": "content_availability",
+        "truth": "playback_error"
+      },
+      {
+        "count": 2,
+        "predicted": "device_app_issue",
+        "truth": "playback_error"
+      },
+      {
+        "count": 2,
+        "predicted": "feature_question",
+        "truth": "product_feedback"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "billing_subscription"
+      },
+      {
+        "count": 1,
+        "predicted": "device_app_issue",
+        "truth": "billing_subscription"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "content_availability"
+      },
+      {
+        "count": 1,
+        "predicted": "feature_question",
+        "truth": "device_app_issue"
+      },
+      {
+        "count": 1,
+        "predicted": "other",
+        "truth": "feature_question"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "login_access"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "praise_or_thanks",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "other",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "content_request",
+        "truth": "praise_or_thanks"
+      },
+      {
+        "count": 1,
+        "predicted": "praise_or_thanks",
+        "truth": "product_feedback"
+      }
+    ],
+    "triage": {
+      "agent": {
+        "auto_coverage": 0.84,
+        "f1": 0.3529,
+        "precision": 0.2812,
+        "recall": 0.4737,
+        "unsafe_auto_rate": 0.5263
+      },
+      "auto_all": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
+      },
+      "escalate_all": {
+        "auto_coverage": 0.0,
+        "f1": 0.1735,
+        "precision": 0.095,
+        "recall": 1.0,
+        "unsafe_auto_rate": 0.0
+      },
+      "rules_only": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
+      }
+    }
+  },
   "brand": "hulu_support",
   "canned_reply": "Sorry! There was an issue with Live TV last night, but it\u2019s now fixed: <link> Thanks for bearing with us!",
-  "coverage_risk": [
-    {
-      "auto_coverage": 0.84,
-      "threshold": 0.3,
-      "unsafe_auto_rate": 0.5263
+  "dev": {
+    "coverage_risk": [
+      {
+        "auto_coverage": 0.85,
+        "threshold": 0.3,
+        "unsafe_auto_rate": 0.5385
+      },
+      {
+        "auto_coverage": 0.85,
+        "threshold": 0.4,
+        "unsafe_auto_rate": 0.5385
+      },
+      {
+        "auto_coverage": 0.85,
+        "threshold": 0.5,
+        "unsafe_auto_rate": 0.5385
+      },
+      {
+        "auto_coverage": 0.85,
+        "threshold": 0.6,
+        "unsafe_auto_rate": 0.5385
+      },
+      {
+        "auto_coverage": 0.7417,
+        "threshold": 0.7,
+        "unsafe_auto_rate": 0.4615
+      },
+      {
+        "auto_coverage": 0.55,
+        "threshold": 0.8,
+        "unsafe_auto_rate": 0.3846
+      },
+      {
+        "auto_coverage": 0.2583,
+        "threshold": 0.9,
+        "unsafe_auto_rate": 0.2308
+      }
+    ],
+    "intent": {
+      "agent": {
+        "accuracy": 0.8,
+        "accuracy_ci": [
+          0.725,
+          0.8667
+        ],
+        "macro_f1": 0.7801,
+        "macro_f1_ci": [
+          0.7039,
+          0.838
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.9565,
+          "content_availability": 0.3077,
+          "content_request": 0.6923,
+          "device_app_issue": 0.8333,
+          "feature_question": 0.5556,
+          "login_access": 0.9524,
+          "other": 0.75,
+          "playback_error": 0.8108,
+          "praise_or_thanks": 0.8889,
+          "product_feedback": 0.8333
+        }
+      },
+      "keywords": {
+        "accuracy": 0.375,
+        "accuracy_ci": [
+          0.2917,
+          0.4583
+        ],
+        "macro_f1": 0.3505,
+        "macro_f1_ci": [
+          0.2737,
+          0.4114
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.6207,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.3529,
+          "feature_question": 0.3529,
+          "login_access": 0.2857,
+          "other": 0.2059,
+          "playback_error": 0.3704,
+          "praise_or_thanks": 0.1667,
+          "product_feedback": 0.5
+        }
+      },
+      "llm": {
+        "accuracy": 0.8417,
+        "accuracy_ci": [
+          0.775,
+          0.9
+        ],
+        "macro_f1": 0.8364,
+        "macro_f1_ci": [
+          0.7556,
+          0.8925
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.9524,
+          "billing_subscription": 0.9565,
+          "content_availability": 0.5882,
+          "content_request": 0.7,
+          "device_app_issue": 0.9565,
+          "feature_question": 0.8182,
+          "login_access": 1.0,
+          "other": 0.7368,
+          "playback_error": 0.7586,
+          "praise_or_thanks": 0.9,
+          "product_feedback": 0.8333
+        }
+      },
+      "majority": {
+        "accuracy": 0.15,
+        "accuracy_ci": [
+          0.0917,
+          0.2167
+        ],
+        "macro_f1": 0.0237,
+        "macro_f1_ci": [
+          0.0153,
+          0.0324
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.0,
+          "billing_subscription": 0.0,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.0,
+          "feature_question": 0.0,
+          "login_access": 0.0,
+          "other": 0.0,
+          "playback_error": 0.2609,
+          "praise_or_thanks": 0.0,
+          "product_feedback": 0.0
+        }
+      },
+      "tfidf_lr": {
+        "accuracy": 0.6667,
+        "accuracy_ci": [
+          0.5833,
+          0.7417
+        ],
+        "macro_f1": 0.6355,
+        "macro_f1_ci": [
+          0.5459,
+          0.701
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.7857,
+          "content_availability": 0.5333,
+          "content_request": 0.7619,
+          "device_app_issue": 0.6087,
+          "feature_question": 0.4167,
+          "login_access": 0.8,
+          "other": 0.4706,
+          "playback_error": 0.7647,
+          "praise_or_thanks": 0.1818,
+          "product_feedback": 0.6667
+        }
+      }
     },
-    {
-      "auto_coverage": 0.84,
-      "threshold": 0.4,
-      "unsafe_auto_rate": 0.5263
+    "judge": {
+      "exact_agreement": 0.3239,
+      "holdout": {
+        "exact_agreement": 0.3333,
+        "n": 30,
+        "quadratic_kappa": 0.6226,
+        "spearman": 0.6659,
+        "within_one_agreement": 0.8333
+      },
+      "human_mean": {
+        "agent": 4.1714,
+        "nearest_reply": 2.3056
+      },
+      "judge_mean": {
+        "agent": 4.2286,
+        "nearest_reply": 3.9583
+      },
+      "n": 71,
+      "pairwise_order_flip_rate": 0.05,
+      "quadratic_kappa": 0.4355,
+      "scored_replies": 71,
+      "self_consistency_kappa": 0.8235,
+      "self_consistency_rows": 30,
+      "spearman": 0.6132,
+      "within_one_agreement": 0.7887
     },
-    {
-      "auto_coverage": 0.84,
-      "threshold": 0.5,
-      "unsafe_auto_rate": 0.5263
+    "reply": {
+      "agent": {
+        "grounded": 4.2353,
+        "overall": 4.2605,
+        "resolves": 3.9076,
+        "safe": 4.7983,
+        "scored": 119,
+        "tone": 4.1008
+      },
+      "canned": {
+        "grounded": 1.2417,
+        "overall": 1.9563,
+        "resolves": 1.275,
+        "safe": 2.9167,
+        "scored": 120,
+        "tone": 2.3917
+      },
+      "nearest_reply": {
+        "grounded": 4.0504,
+        "overall": 3.9223,
+        "resolves": 3.0588,
+        "safe": 4.8655,
+        "scored": 119,
+        "tone": 3.7143
+      },
+      "pairwise_agent_vs_nearest_reply": {
+        "loss": 16,
+        "tie": 23,
+        "win": 81
+      }
     },
-    {
-      "auto_coverage": 0.84,
-      "threshold": 0.6,
-      "unsafe_auto_rate": 0.5263
-    },
-    {
-      "auto_coverage": 0.745,
-      "threshold": 0.7,
-      "unsafe_auto_rate": 0.4737
-    },
-    {
-      "auto_coverage": 0.535,
-      "threshold": 0.8,
-      "unsafe_auto_rate": 0.3684
-    },
-    {
-      "auto_coverage": 0.29,
-      "threshold": 0.9,
-      "unsafe_auto_rate": 0.2105
+    "rows": 120,
+    "top_confusions": [
+      {
+        "count": 3,
+        "predicted": "content_request",
+        "truth": "content_availability"
+      },
+      {
+        "count": 3,
+        "predicted": "content_availability",
+        "truth": "feature_question"
+      },
+      {
+        "count": 2,
+        "predicted": "content_request",
+        "truth": "feature_question"
+      },
+      {
+        "count": 2,
+        "predicted": "content_request",
+        "truth": "product_feedback"
+      },
+      {
+        "count": 1,
+        "predicted": "device_app_issue",
+        "truth": "billing_subscription"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "content_availability"
+      },
+      {
+        "count": 1,
+        "predicted": "feature_question",
+        "truth": "device_app_issue"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "device_app_issue"
+      },
+      {
+        "count": 1,
+        "predicted": "other",
+        "truth": "feature_question"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "login_access"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "playback_error",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "device_app_issue",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "other",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "content_request",
+        "truth": "praise_or_thanks"
+      },
+      {
+        "count": 1,
+        "predicted": "feature_question",
+        "truth": "product_feedback"
+      },
+      {
+        "count": 1,
+        "predicted": "praise_or_thanks",
+        "truth": "product_feedback"
+      }
+    ],
+    "triage": {
+      "agent": {
+        "auto_coverage": 0.85,
+        "f1": 0.3871,
+        "precision": 0.3333,
+        "recall": 0.4615,
+        "unsafe_auto_rate": 0.5385
+      },
+      "auto_all": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
+      },
+      "escalate_all": {
+        "auto_coverage": 0.0,
+        "f1": 0.1955,
+        "precision": 0.1083,
+        "recall": 1.0,
+        "unsafe_auto_rate": 0.0
+      },
+      "rules_only": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
+      }
     }
-  ],
+  },
   "golden_rows": 200,
-  "intent": {
-    "agent": {
-      "accuracy": 0.79,
-      "accuracy_ci": [
-        0.735,
-        0.845
-      ],
-      "macro_f1": 0.7981,
-      "macro_f1_ci": [
-        0.7397,
-        0.8457
-      ],
-      "per_class_f1": {
-        "ads_complaint": 1.0,
-        "billing_subscription": 0.9375,
-        "content_availability": 0.6522,
-        "content_request": 0.72,
-        "device_app_issue": 0.8,
-        "feature_question": 0.4516,
-        "login_access": 0.96,
-        "other": 0.7619,
-        "playback_error": 0.8267,
-        "praise_or_thanks": 0.8571,
-        "product_feedback": 0.8125
+  "test": {
+    "coverage_risk": [
+      {
+        "auto_coverage": 0.825,
+        "threshold": 0.3,
+        "unsafe_auto_rate": 0.5
+      },
+      {
+        "auto_coverage": 0.825,
+        "threshold": 0.4,
+        "unsafe_auto_rate": 0.5
+      },
+      {
+        "auto_coverage": 0.825,
+        "threshold": 0.5,
+        "unsafe_auto_rate": 0.5
+      },
+      {
+        "auto_coverage": 0.825,
+        "threshold": 0.6,
+        "unsafe_auto_rate": 0.5
+      },
+      {
+        "auto_coverage": 0.75,
+        "threshold": 0.7,
+        "unsafe_auto_rate": 0.5
+      },
+      {
+        "auto_coverage": 0.5125,
+        "threshold": 0.8,
+        "unsafe_auto_rate": 0.3333
+      },
+      {
+        "auto_coverage": 0.3375,
+        "threshold": 0.9,
+        "unsafe_auto_rate": 0.1667
+      }
+    ],
+    "intent": {
+      "agent": {
+        "accuracy": 0.775,
+        "accuracy_ci": [
+          0.6875,
+          0.8503
+        ],
+        "macro_f1": 0.7746,
+        "macro_f1_ci": [
+          0.6141,
+          0.8641
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.8889,
+          "content_availability": 0.7879,
+          "content_request": 0.75,
+          "device_app_issue": 0.7273,
+          "feature_question": 0.3077,
+          "login_access": 1.0,
+          "other": 0.8,
+          "playback_error": 0.8421,
+          "praise_or_thanks": 0.6667,
+          "product_feedback": 0.75
+        }
+      },
+      "keywords": {
+        "accuracy": 0.375,
+        "accuracy_ci": [
+          0.275,
+          0.4875
+        ],
+        "macro_f1": 0.4233,
+        "macro_f1_ci": [
+          0.2846,
+          0.496
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.8571,
+          "billing_subscription": 0.6,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.4615,
+          "feature_question": 0.5333,
+          "login_access": 0.8,
+          "other": 0.0952,
+          "playback_error": 0.6429,
+          "praise_or_thanks": 0.6667,
+          "product_feedback": 0.0
+        }
+      },
+      "llm": {
+        "accuracy": 0.8125,
+        "accuracy_ci": [
+          0.725,
+          0.8875
+        ],
+        "macro_f1": 0.8209,
+        "macro_f1_ci": [
+          0.6917,
+          0.8858
+        ],
+        "per_class_f1": {
+          "ads_complaint": 1.0,
+          "billing_subscription": 0.8,
+          "content_availability": 0.8,
+          "content_request": 0.7692,
+          "device_app_issue": 0.8571,
+          "feature_question": 0.3333,
+          "login_access": 1.0,
+          "other": 0.6667,
+          "playback_error": 0.9143,
+          "praise_or_thanks": 1.0,
+          "product_feedback": 0.8889
+        }
+      },
+      "majority": {
+        "accuracy": 0.225,
+        "accuracy_ci": [
+          0.1375,
+          0.325
+        ],
+        "macro_f1": 0.0334,
+        "macro_f1_ci": [
+          0.022,
+          0.0491
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.0,
+          "billing_subscription": 0.0,
+          "content_availability": 0.0,
+          "content_request": 0.0,
+          "device_app_issue": 0.0,
+          "feature_question": 0.0,
+          "login_access": 0.0,
+          "other": 0.0,
+          "playback_error": 0.3673,
+          "praise_or_thanks": 0.0,
+          "product_feedback": 0.0
+        }
+      },
+      "tfidf_lr": {
+        "accuracy": 0.625,
+        "accuracy_ci": [
+          0.5125,
+          0.7253
+        ],
+        "macro_f1": 0.5412,
+        "macro_f1_ci": [
+          0.4331,
+          0.6573
+        ],
+        "per_class_f1": {
+          "ads_complaint": 0.7143,
+          "billing_subscription": 0.75,
+          "content_availability": 0.64,
+          "content_request": 0.6957,
+          "device_app_issue": 0.4615,
+          "feature_question": 0.6316,
+          "login_access": 0.6667,
+          "other": 0.0,
+          "playback_error": 0.6667,
+          "praise_or_thanks": 0.0,
+          "product_feedback": 0.7273
+        }
       }
     },
-    "keywords": {
-      "accuracy": 0.375,
-      "accuracy_ci": [
-        0.315,
-        0.45
-      ],
-      "macro_f1": 0.3777,
-      "macro_f1_ci": [
-        0.3104,
-        0.4371
-      ],
-      "per_class_f1": {
-        "ads_complaint": 0.9412,
-        "billing_subscription": 0.6154,
-        "content_availability": 0.0,
-        "content_request": 0.0,
-        "device_app_issue": 0.4,
-        "feature_question": 0.4375,
-        "login_access": 0.4211,
-        "other": 0.1636,
-        "playback_error": 0.5091,
-        "praise_or_thanks": 0.2667,
-        "product_feedback": 0.4
+    "judge": {
+      "exact_agreement": 0.2292,
+      "holdout": {
+        "exact_agreement": 0.2,
+        "n": 30,
+        "quadratic_kappa": 0.3692,
+        "spearman": 0.6819,
+        "within_one_agreement": 0.6333
+      },
+      "human_mean": {
+        "agent": 4.0,
+        "nearest_reply": 1.7917
+      },
+      "judge_mean": {
+        "agent": 4.3646,
+        "nearest_reply": 3.6146
+      },
+      "n": 48,
+      "pairwise_order_flip_rate": 0.025,
+      "quadratic_kappa": 0.4744,
+      "scored_replies": 48,
+      "self_consistency_kappa": 0.8235,
+      "self_consistency_rows": 30,
+      "spearman": 0.6729,
+      "within_one_agreement": 0.7292
+    },
+    "reply": {
+      "agent": {
+        "grounded": 4.359,
+        "overall": 4.3622,
+        "resolves": 3.9744,
+        "safe": 4.9231,
+        "scored": 78,
+        "tone": 4.1923
+      },
+      "canned": {
+        "grounded": 1.2125,
+        "overall": 1.9844,
+        "resolves": 1.3125,
+        "safe": 2.8375,
+        "scored": 80,
+        "tone": 2.575
+      },
+      "nearest_reply": {
+        "grounded": 3.8375,
+        "overall": 3.7719,
+        "resolves": 2.6875,
+        "safe": 4.925,
+        "scored": 80,
+        "tone": 3.6375
+      },
+      "pairwise_agent_vs_nearest_reply": {
+        "loss": 2,
+        "tie": 7,
+        "win": 71
       }
     },
-    "llm": {
-      "accuracy": 0.83,
-      "accuracy_ci": [
-        0.775,
-        0.88
-      ],
-      "macro_f1": 0.839,
-      "macro_f1_ci": [
-        0.7824,
-        0.8824
-      ],
-      "per_class_f1": {
-        "ads_complaint": 0.9697,
-        "billing_subscription": 0.9091,
-        "content_availability": 0.7234,
-        "content_request": 0.7391,
-        "device_app_issue": 0.9189,
-        "feature_question": 0.6471,
-        "login_access": 1.0,
-        "other": 0.72,
-        "playback_error": 0.8438,
-        "praise_or_thanks": 0.9091,
-        "product_feedback": 0.8485
+    "rows": 80,
+    "top_confusions": [
+      {
+        "count": 3,
+        "predicted": "content_availability",
+        "truth": "feature_question"
+      },
+      {
+        "count": 3,
+        "predicted": "content_request",
+        "truth": "feature_question"
+      },
+      {
+        "count": 2,
+        "predicted": "content_availability",
+        "truth": "content_request"
+      },
+      {
+        "count": 2,
+        "predicted": "playback_error",
+        "truth": "device_app_issue"
+      },
+      {
+        "count": 2,
+        "predicted": "playback_error",
+        "truth": "feature_question"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "billing_subscription"
+      },
+      {
+        "count": 1,
+        "predicted": "praise_or_thanks",
+        "truth": "other"
+      },
+      {
+        "count": 1,
+        "predicted": "content_availability",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "device_app_issue",
+        "truth": "playback_error"
+      },
+      {
+        "count": 1,
+        "predicted": "content_request",
+        "truth": "product_feedback"
+      },
+      {
+        "count": 1,
+        "predicted": "feature_question",
+        "truth": "product_feedback"
       }
-    },
-    "majority": {
-      "accuracy": 0.18,
-      "accuracy_ci": [
-        0.13,
-        0.235
-      ],
-      "macro_f1": 0.0277,
-      "macro_f1_ci": [
-        0.0209,
-        0.0346
-      ],
-      "per_class_f1": {
-        "ads_complaint": 0.0,
-        "billing_subscription": 0.0,
-        "content_availability": 0.0,
-        "content_request": 0.0,
-        "device_app_issue": 0.0,
-        "feature_question": 0.0,
-        "login_access": 0.0,
-        "other": 0.0,
-        "playback_error": 0.3051,
-        "praise_or_thanks": 0.0,
-        "product_feedback": 0.0
+    ],
+    "triage": {
+      "agent": {
+        "auto_coverage": 0.825,
+        "f1": 0.3,
+        "precision": 0.2143,
+        "recall": 0.5,
+        "unsafe_auto_rate": 0.5
+      },
+      "auto_all": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
+      },
+      "escalate_all": {
+        "auto_coverage": 0.0,
+        "f1": 0.1395,
+        "precision": 0.075,
+        "recall": 1.0,
+        "unsafe_auto_rate": 0.0
+      },
+      "rules_only": {
+        "auto_coverage": 1.0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "unsafe_auto_rate": 1.0
       }
-    },
-    "tfidf_lr": {
-      "accuracy": 0.65,
-      "accuracy_ci": [
-        0.59,
-        0.715
-      ],
-      "macro_f1": 0.6113,
-      "macro_f1_ci": [
-        0.5435,
-        0.6728
-      ],
-      "per_class_f1": {
-        "ads_complaint": 0.8824,
-        "billing_subscription": 0.7778,
-        "content_availability": 0.6,
-        "content_request": 0.7273,
-        "device_app_issue": 0.5556,
-        "feature_question": 0.5116,
-        "login_access": 0.7692,
-        "other": 0.3333,
-        "playback_error": 0.7164,
-        "praise_or_thanks": 0.1667,
-        "product_feedback": 0.6842
-      }
-    }
-  },
-  "judge": {
-    "exact_agreement": 0.2857,
-    "human_mean": {
-      "agent": 4.1017,
-      "nearest_reply": 2.1
-    },
-    "judge_mean": {
-      "agent": 4.2839,
-      "nearest_reply": 3.8208
-    },
-    "pairwise_order_flip_rate": 0.04,
-    "quadratic_kappa": 0.4546,
-    "rated_rows": 60,
-    "scored_replies": 119,
-    "self_consistency_kappa": 0.8235,
-    "self_consistency_rows": 30,
-    "spearman": 0.639,
-    "within_one_agreement": 0.7647
-  },
-  "reply": {
-    "agent": {
-      "grounded": 4.2843,
-      "overall": 4.3008,
-      "resolves": 3.934,
-      "safe": 4.8477,
-      "scored": 197,
-      "tone": 4.1371
-    },
-    "canned": {
-      "grounded": 1.23,
-      "overall": 1.9675,
-      "resolves": 1.29,
-      "safe": 2.885,
-      "scored": 200,
-      "tone": 2.465
-    },
-    "nearest_reply": {
-      "grounded": 3.9648,
-      "overall": 3.8618,
-      "resolves": 2.9095,
-      "safe": 4.8894,
-      "scored": 199,
-      "tone": 3.6834
-    },
-    "pairwise_agent_vs_nearest_reply": {
-      "loss": 18,
-      "tie": 30,
-      "win": 152
-    }
-  },
-  "top_confusions": [
-    {
-      "count": 6,
-      "predicted": "content_availability",
-      "truth": "feature_question"
-    },
-    {
-      "count": 5,
-      "predicted": "content_request",
-      "truth": "feature_question"
-    },
-    {
-      "count": 3,
-      "predicted": "content_request",
-      "truth": "content_availability"
-    },
-    {
-      "count": 3,
-      "predicted": "playback_error",
-      "truth": "device_app_issue"
-    },
-    {
-      "count": 3,
-      "predicted": "content_request",
-      "truth": "product_feedback"
-    },
-    {
-      "count": 2,
-      "predicted": "content_availability",
-      "truth": "content_request"
-    },
-    {
-      "count": 2,
-      "predicted": "playback_error",
-      "truth": "feature_question"
-    },
-    {
-      "count": 2,
-      "predicted": "content_availability",
-      "truth": "playback_error"
-    },
-    {
-      "count": 2,
-      "predicted": "device_app_issue",
-      "truth": "playback_error"
-    },
-    {
-      "count": 2,
-      "predicted": "feature_question",
-      "truth": "product_feedback"
-    },
-    {
-      "count": 1,
-      "predicted": "content_availability",
-      "truth": "billing_subscription"
-    },
-    {
-      "count": 1,
-      "predicted": "device_app_issue",
-      "truth": "billing_subscription"
-    },
-    {
-      "count": 1,
-      "predicted": "playback_error",
-      "truth": "content_availability"
-    },
-    {
-      "count": 1,
-      "predicted": "feature_question",
-      "truth": "device_app_issue"
-    },
-    {
-      "count": 1,
-      "predicted": "other",
-      "truth": "feature_question"
-    },
-    {
-      "count": 1,
-      "predicted": "playback_error",
-      "truth": "login_access"
-    },
-    {
-      "count": 1,
-      "predicted": "content_availability",
-      "truth": "other"
-    },
-    {
-      "count": 1,
-      "predicted": "playback_error",
-      "truth": "other"
-    },
-    {
-      "count": 1,
-      "predicted": "praise_or_thanks",
-      "truth": "other"
-    },
-    {
-      "count": 1,
-      "predicted": "other",
-      "truth": "playback_error"
-    },
-    {
-      "count": 1,
-      "predicted": "content_request",
-      "truth": "praise_or_thanks"
-    },
-    {
-      "count": 1,
-      "predicted": "praise_or_thanks",
-      "truth": "product_feedback"
-    }
-  ],
-  "triage": {
-    "agent": {
-      "auto_coverage": 0.84,
-      "f1": 0.3529,
-      "precision": 0.2812,
-      "recall": 0.4737,
-      "unsafe_auto_rate": 0.5263
-    },
-    "auto_all": {
-      "auto_coverage": 1.0,
-      "f1": 0.0,
-      "precision": 0.0,
-      "recall": 0.0,
-      "unsafe_auto_rate": 1.0
-    },
-    "escalate_all": {
-      "auto_coverage": 0.0,
-      "f1": 0.1735,
-      "precision": 0.095,
-      "recall": 1.0,
-      "unsafe_auto_rate": 0.0
-    },
-    "rules_only": {
-      "auto_coverage": 1.0,
-      "f1": 0.0,
-      "precision": 0.0,
-      "recall": 0.0,
-      "unsafe_auto_rate": 1.0
     }
   }
 }

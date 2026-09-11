@@ -16,11 +16,14 @@ GOLDEN = Path("data/golden/golden.jsonl")
 RATINGS = Path("data/golden/reply_ratings.jsonl")
 RATINGS_KEY = Path("data/golden/reply_ratings_key.jsonl")
 HUMAN_RATINGS = Path("data/golden/reply_ratings_human.jsonl")
-SELF_CONSISTENCY = 30
 METRICS = Path("results/metrics.json")
 ERRORS = Path("results/errors.jsonl")
+ITERATIONS = Path("results/iterations.json")
+SELF_CONSISTENCY = 30
 RESAMPLES = 1000
 THRESHOLDS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+SPLITS = {"all": None, "dev": "stratified", "test": "uniform"}
+SYSTEMS = ("agent", "canned", "nearest_reply")
 
 
 def accuracy(truth, pred):
@@ -44,7 +47,7 @@ def bootstrap(truth, pred, metric):
 def intent_block(truth, predictions):
     labels = sorted(set(truth))
     out = {}
-    for name, pred in predictions.items():
+    for name, pred in sorted(predictions.items()):
         per_class = f1_score(truth, pred, average=None, labels=labels, zero_division=0)
         out[name] = {
             "accuracy": accuracy(truth, pred),
@@ -60,8 +63,8 @@ def triage_metrics(should_escalate, escalated):
     precision, recall, f1, _ = precision_recall_fscore_support(
         should_escalate, escalated, average="binary", zero_division=0
     )
-    risky = [s for s, e in zip(should_escalate, escalated, strict=True) if s]
-    missed = [1 for s, e in zip(should_escalate, escalated, strict=True) if s and not e]
+    risky = [s for s in should_escalate if s]
+    missed = [s for s, e in zip(should_escalate, escalated, strict=True) if s and not e]
     return {
         "precision": float(precision),
         "recall": float(recall),
@@ -71,41 +74,24 @@ def triage_metrics(should_escalate, escalated):
     }
 
 
-def rules_only(golden, built):
+def rules_only(rows, built):
     return [
-        bool(SENSITIVE.search(g["customer"]))
-        or not is_english(g["customer"])
-        or similar(g["customer"], 1, built)[0]["score"] < MIN_EVIDENCE_SCORE
-        for g in golden
+        bool(SENSITIVE.search(r["customer"]))
+        or not is_english(r["customer"])
+        or similar(r["customer"], 1, built)[0]["score"] < MIN_EVIDENCE_SCORE
+        for r in rows
     ]
 
 
-def reply_block(golden, evidence, replies):
-    items = [
-        (g["customer"], evidence[g["id"]], replies[name][g["id"]])
-        for name in sorted(replies)
-        for g in golden
-    ]
-    scored = score_many(items)
-    out = {}
-    for i, name in enumerate(sorted(replies)):
-        chunk = [s for s in scored[i * len(golden) : (i + 1) * len(golden)] if s]
-        out[name] = {
-            dim: float(np.mean([s[dim] for s in chunk]))
-            for dim in ("grounded", "resolves", "tone", "safe", "overall")
-        } | {"scored": len(chunk)}
-    return out, scored
-
-
-def coverage_risk(golden, outputs):
+def coverage_risk(rows, outputs):
     curve = []
     for threshold in THRESHOLDS:
         auto = [
-            outputs[g["id"]]["action"] == "auto" and outputs[g["id"]]["confidence"] >= threshold
-            for g in golden
+            outputs[r["id"]]["action"] == "auto" and outputs[r["id"]]["confidence"] >= threshold
+            for r in rows
         ]
-        risky = [g for g in golden if g["should_escalate"]]
-        unsafe = [g for g, a in zip(golden, auto, strict=True) if g["should_escalate"] and a]
+        risky = [r for r in rows if r["should_escalate"]]
+        unsafe = [r for r, a in zip(rows, auto, strict=True) if r["should_escalate"] and a]
         curve.append(
             {
                 "threshold": threshold,
@@ -130,53 +116,124 @@ def spearman(a, b):
 
 
 def kappa(a, b):
+    if len(set(a)) < 2 and len(set(b)) < 2:
+        return 1.0 if list(a) == list(b) else 0.0
     return float(cohen_kappa_score(a, b, weights="quadratic"))
 
 
-def judge_validation(built, flip_rate):
+def agreement(human, judge):
+    rounded = [int(round(j)) for j in judge]
+    return {
+        "n": len(human),
+        "spearman": spearman(human, judge),
+        "quadratic_kappa": kappa(human, rounded),
+        "exact_agreement": float(np.mean([h == j for h, j in zip(human, rounded, strict=True)])),
+        "within_one_agreement": float(
+            np.mean([abs(h - j) <= 1 for h, j in zip(human, rounded, strict=True)])
+        ),
+    }
+
+
+def rating_scores(built):
     sheet = sorted(read_jsonl(RATINGS), key=lambda r: r["id"])
     agent_side = {r["id"]: r["agent_is"] for r in read_jsonl(RATINGS_KEY)}
     human_rows = {r["id"]: r for r in read_jsonl(HUMAN_RATINGS)}
-    items, human, systems = [], [], []
-    for row in sheet:
+    items, rated = [], []
+    for position, row in enumerate(sheet):
         evidence = evidence_for(row["customer"], built)
         for side in ("a", "b"):
             items.append((row["customer"], evidence, row[f"reply_{side}"]))
-            human.append(int(round(human_rows[row["id"]][f"score_{side}"])))
-            systems.append("agent" if agent_side[row["id"]] == side else "nearest_reply")
+            rated.append(
+                {
+                    "id": row["id"],
+                    "position": position,
+                    "system": "agent" if agent_side[row["id"]] == side else "nearest_reply",
+                    "human": int(round(human_rows[row["id"]][f"score_{side}"])),
+                }
+            )
     scored = score_many(items)
-    kept = [(h, s["overall"], sys) for h, s, sys in zip(human, scored, systems, strict=True) if s]
-    human_kept = [h for h, _, _ in kept]
-    judge_kept = [j for _, j, _ in kept]
-    rounded = [int(round(j)) for j in judge_kept]
     strict = score_many(items[:SELF_CONSISTENCY], suffix="\n\nBe strict.")
-    pairs = [
+    for entry, score in zip(rated, scored, strict=True):
+        entry["judge"] = score["overall"] if score else None
+    consistency = [
         (int(round(a["overall"])), int(round(b["overall"])))
         for a, b in zip(scored[:SELF_CONSISTENCY], strict, strict=True)
         if a and b
     ]
-    return {
-        "rated_rows": len(sheet),
+    return rated, consistency
+
+
+def judge_block(rated, consistency, flip_rate):
+    kept = [r for r in rated if r["judge"] is not None]
+    if not kept:
+        return {"scored_replies": 0, "pairwise_order_flip_rate": flip_rate}
+    human = [r["human"] for r in kept]
+    judge = [r["judge"] for r in kept]
+    holdout = [r for r in kept if r["position"] >= SELF_CONSISTENCY]
+    return agreement(human, judge) | {
         "scored_replies": len(kept),
-        "spearman": spearman(human_kept, judge_kept),
-        "quadratic_kappa": kappa(human_kept, rounded),
-        "exact_agreement": float(
-            np.mean([h == j for h, j in zip(human_kept, rounded, strict=True)])
-        ),
-        "within_one_agreement": float(
-            np.mean([abs(h - j) <= 1 for h, j in zip(human_kept, rounded, strict=True)])
-        ),
+        "holdout": agreement([r["human"] for r in holdout], [r["judge"] for r in holdout]),
         "human_mean": {
-            system: float(np.mean([h for h, _, s in kept if s == system]))
+            system: float(np.mean([r["human"] for r in kept if r["system"] == system]))
             for system in ("agent", "nearest_reply")
         },
         "judge_mean": {
-            system: float(np.mean([j for _, j, s in kept if s == system]))
+            system: float(np.mean([r["judge"] for r in kept if r["system"] == system]))
             for system in ("agent", "nearest_reply")
         },
-        "self_consistency_kappa": kappa([a for a, _ in pairs], [b for _, b in pairs]),
-        "self_consistency_rows": len(pairs),
+        "self_consistency_kappa": kappa([a for a, _ in consistency], [b for _, b in consistency]),
+        "self_consistency_rows": len(consistency),
         "pairwise_order_flip_rate": flip_rate,
+    }
+
+
+def split_block(rows, outputs, predictions, scored, details, rated, consistency, built):
+    ids = [r["id"] for r in rows]
+    index_of = {r["id"]: i for i, r in enumerate(rows)}
+    truth = [r["intent"] for r in rows]
+    should_escalate = [bool(r["should_escalate"]) for r in rows]
+    verdicts = [agreed(*details[i]) for i in ids]
+    flip_rate = float(
+        np.mean([agreed(*details[i]) == "TIE" and details[i][0] != "TIE" for i in ids])
+    )
+    kept = [r for r in rated if r["id"] in index_of]
+    confusion = Counter(
+        (t, p)
+        for t, p in zip(truth, [predictions["agent"][r["id"]] for r in rows], strict=True)
+        if t != p
+    )
+    return {
+        "rows": len(rows),
+        "intent": intent_block(truth, {k: [v[i] for i in ids] for k, v in predictions.items()}),
+        "triage": {
+            "escalate_all": triage_metrics(should_escalate, [True] * len(rows)),
+            "auto_all": triage_metrics(should_escalate, [False] * len(rows)),
+            "rules_only": triage_metrics(should_escalate, rules_only(rows, built)),
+            "agent": triage_metrics(
+                should_escalate, [outputs[i]["action"] == "escalate" for i in ids]
+            ),
+        },
+        "reply": {
+            system: {
+                dim: float(np.mean([scored[system][i][dim] for i in ids if scored[system][i]]))
+                for dim in ("grounded", "resolves", "tone", "safe", "overall")
+            }
+            | {"scored": sum(1 for i in ids if scored[system][i])}
+            for system in SYSTEMS
+        }
+        | {
+            "pairwise_agent_vs_nearest_reply": {
+                "win": verdicts.count("A"),
+                "loss": verdicts.count("B"),
+                "tie": verdicts.count("TIE"),
+            }
+        },
+        "coverage_risk": coverage_risk(rows, outputs),
+        "judge": judge_block(kept, consistency, flip_rate),
+        "top_confusions": [
+            {"truth": t, "predicted": p, "count": n}
+            for (t, p), n in sorted(confusion.items(), key=lambda kv: (-kv[1], kv[0]))
+        ],
     }
 
 
@@ -190,6 +247,113 @@ def round_floats(value, places=4):
     return value
 
 
+def main():
+    golden = read_jsonl(GOLDEN)
+    outputs = {row["id"]: row for row in read_jsonl(AGENT_OUTPUTS)}
+    built = index()
+    train = weak_training_set()
+    texts = [g["customer"] for g in golden]
+    ids = [g["id"] for g in golden]
+
+    predictions = {
+        name: dict(zip(ids, fn(train, texts), strict=True))
+        for name, fn in sorted(CLASSIFIERS.items())
+    }
+    predictions["agent"] = {i: outputs[i]["intent"] for i in ids}
+
+    canned = Counter(r["brand_reply"] for r in corpus()).most_common(1)[0][0]
+    evidence = {i: evidence_for(g["customer"], built) for i, g in zip(ids, golden, strict=True)}
+    nearest = {
+        i: similar(g["customer"], 1, built)[0]["brand_reply"]
+        for i, g in zip(ids, golden, strict=True)
+    }
+    replies = {
+        "agent": {i: outputs[i]["reply"] for i in ids},
+        "canned": {i: canned for i in ids},
+        "nearest_reply": nearest,
+    }
+    flat = score_many(
+        [
+            (g["customer"], evidence[i], replies[system][i])
+            for system in SYSTEMS
+            for i, g in zip(ids, golden, strict=True)
+        ]
+    )
+    scored = {
+        system: dict(zip(ids, flat[k * len(ids) : (k + 1) * len(ids)], strict=True))
+        for k, system in enumerate(SYSTEMS)
+    }
+    details = dict(
+        zip(
+            ids,
+            compare_details(
+                [
+                    (g["customer"], evidence[i], replies["agent"][i], nearest[i])
+                    for i, g in zip(ids, golden, strict=True)
+                ]
+            ),
+            strict=True,
+        )
+    )
+    rated, consistency = rating_scores(built)
+
+    metrics = {"brand": "hulu_support", "canned_reply": canned, "golden_rows": len(golden)}
+    for name, stratum in SPLITS.items():
+        rows = [g for g in golden if stratum is None or g["sample_stratum"] == stratum]
+        metrics[name] = split_block(
+            rows, outputs, predictions, scored, details, rated, consistency, built
+        )
+    metrics = round_floats(metrics)
+    METRICS.parent.mkdir(parents=True, exist_ok=True)
+    METRICS.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n")
+
+    write_jsonl(
+        ERRORS,
+        [
+            {
+                "id": g["id"],
+                "split": "dev" if g["sample_stratum"] == "stratified" else "test",
+                "customer": g["customer"],
+                "true_intent": g["intent"],
+                "predicted": {name: predictions[name][g["id"]] for name in sorted(predictions)},
+                "should_escalate": g["should_escalate"],
+                "escalate_reason": g["escalate_reason"],
+                "agent_action": outputs[g["id"]]["action"],
+                "agent_reason": outputs[g["id"]]["reason"],
+                "agent_reply": outputs[g["id"]]["reply"],
+                "judge": scored["agent"][g["id"]],
+            }
+            for g in golden
+            if predictions["agent"][g["id"]] != g["intent"]
+            or (outputs[g["id"]]["action"] == "escalate") != bool(g["should_escalate"])
+        ],
+    )
+    print(report(metrics))
+
+
+def record(version, changes):
+    metrics = json.loads(METRICS.read_text())
+    entry = {"version": version, "changes": changes}
+    for split in SPLITS:
+        block = metrics[split]
+        entry[split] = round_floats(
+            {
+                "intent_acc": block["intent"]["agent"]["accuracy"],
+                "agent_macro_f1": block["intent"]["agent"]["macro_f1"],
+                "llm_intent_acc": block["intent"]["llm"]["accuracy"],
+                "unsafe_auto_rate": block["triage"]["agent"]["unsafe_auto_rate"],
+                "auto_coverage": block["triage"]["agent"]["auto_coverage"],
+                "judge_overall_agent": block["reply"]["agent"]["overall"],
+                "judge_overall_nearest": block["reply"]["nearest_reply"]["overall"],
+                "judge_kappa": block["judge"]["quadratic_kappa"],
+            }
+        )
+    history = json.loads(ITERATIONS.read_text()) if ITERATIONS.exists() else []
+    history = [h for h in history if h["version"] != version] + [entry]
+    ITERATIONS.write_text(json.dumps(history, indent=2) + "\n")
+    print(json.dumps(entry, indent=2))
+
+
 def table(title, rows, columns):
     lines = [f"\n### {title}", "| " + " | ".join(columns) + " |", "|" + "---|" * len(columns)]
     for row in rows:
@@ -197,127 +361,27 @@ def table(title, rows, columns):
     return "\n".join(lines)
 
 
-def main():
-    golden = read_jsonl(GOLDEN)
-    outputs = {row["id"]: row for row in read_jsonl(AGENT_OUTPUTS)}
-    built = index()
-    texts = [g["customer"] for g in golden]
-    truth = [g["intent"] for g in golden]
-    train = weak_training_set()
-
-    predictions = {name: fn(train, texts) for name, fn in sorted(CLASSIFIERS.items())}
-    predictions["agent"] = [outputs[g["id"]]["intent"] for g in golden]
-
-    should_escalate = [bool(g["should_escalate"]) for g in golden]
-    triage = {
-        "escalate_all": triage_metrics(should_escalate, [True] * len(golden)),
-        "auto_all": triage_metrics(should_escalate, [False] * len(golden)),
-        "rules_only": triage_metrics(should_escalate, rules_only(golden, built)),
-        "agent": triage_metrics(
-            should_escalate, [outputs[g["id"]]["action"] == "escalate" for g in golden]
-        ),
-    }
-
-    canned = Counter(r["brand_reply"] for r in corpus()).most_common(1)[0][0]
-    evidence = {g["id"]: evidence_for(g["customer"], built) for g in golden}
-    nearest = {g["id"]: similar(g["customer"], 1, built)[0]["brand_reply"] for g in golden}
-    replies = {
-        "agent": {g["id"]: outputs[g["id"]]["reply"] for g in golden},
-        "canned": {g["id"]: canned for g in golden},
-        "nearest_reply": nearest,
-    }
-    reply, scored = reply_block(golden, evidence, replies)
-    details = compare_details(
-        [
-            (g["customer"], evidence[g["id"]], replies["agent"][g["id"]], nearest[g["id"]])
-            for g in golden
+def report(metrics):
+    out = []
+    for split in SPLITS:
+        m = metrics[split]
+        intent_rows = [
+            (name, v["accuracy"], f"[{v['accuracy_ci'][0]}, {v['accuracy_ci'][1]}]", v["macro_f1"])
+            for name, v in sorted(m["intent"].items())
         ]
-    )
-    verdicts = [agreed(first, second) for first, second in details]
-    flip_rate = float(np.mean([agreed(f, s) == "TIE" and f != "TIE" for f, s in details]))
-    reply["pairwise_agent_vs_nearest_reply"] = {
-        "win": verdicts.count("A"),
-        "loss": verdicts.count("B"),
-        "tie": verdicts.count("TIE"),
-    }
-
-    confusion = Counter((t, p) for t, p in zip(truth, predictions["agent"], strict=True) if t != p)
-    metrics = {
-        "brand": "hulu_support",
-        "golden_rows": len(golden),
-        "canned_reply": canned,
-        "intent": intent_block(truth, predictions),
-        "triage": triage,
-        "reply": reply,
-        "coverage_risk": coverage_risk(golden, outputs),
-        "judge": judge_validation(built, flip_rate),
-        "top_confusions": [
-            {"truth": t, "predicted": p, "count": n}
-            for (t, p), n in sorted(confusion.items(), key=lambda kv: (-kv[1], kv[0]))
-        ],
-    }
-    metrics = round_floats(metrics)
-    METRICS.parent.mkdir(parents=True, exist_ok=True)
-    METRICS.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n")
-
-    agent_scores = scored[sorted(replies).index("agent") * len(golden) :][: len(golden)]
-    write_jsonl(
-        ERRORS,
-        [
-            {
-                "id": g["id"],
-                "customer": g["customer"],
-                "true_intent": g["intent"],
-                "predicted": {name: predictions[name][i] for name in sorted(predictions)},
-                "should_escalate": g["should_escalate"],
-                "escalate_reason": g["escalate_reason"],
-                "agent_action": outputs[g["id"]]["action"],
-                "agent_reason": outputs[g["id"]]["reason"],
-                "agent_reply": outputs[g["id"]]["reply"],
-                "judge": agent_scores[i],
-            }
-            for i, g in enumerate(golden)
-            if predictions["agent"][i] != g["intent"]
-            or (outputs[g["id"]]["action"] == "escalate") != g["should_escalate"]
-        ],
-    )
-    print(report(metrics))
-
-
-def report(m):
-    intent_rows = [
-        (
-            name,
-            f"{v['accuracy']:.3f}",
-            f"[{v['accuracy_ci'][0]:.3f}, {v['accuracy_ci'][1]:.3f}]",
-            f"{v['macro_f1']:.3f}",
-            f"[{v['macro_f1_ci'][0]:.3f}, {v['macro_f1_ci'][1]:.3f}]",
-        )
-        for name, v in sorted(m["intent"].items())
-    ]
-    triage_rows = [
-        (
-            name,
-            f"{v['precision']:.3f}",
-            f"{v['recall']:.3f}",
-            f"{v['f1']:.3f}",
-            f"{v['unsafe_auto_rate']:.3f}",
-            f"{v['auto_coverage']:.3f}",
-        )
-        for name, v in sorted(m["triage"].items())
-    ]
-    reply_rows = [
-        (name, v["overall"], v["grounded"], v["resolves"], v["tone"], v["safe"])
-        for name, v in sorted(m["reply"].items())
-        if isinstance(v, dict) and "overall" in v
-    ]
-    curve_rows = [
-        (c["threshold"], c["auto_coverage"], c["unsafe_auto_rate"]) for c in m["coverage_risk"]
-    ]
-    pair = m["reply"]["pairwise_agent_vs_nearest_reply"]
-    return "\n".join(
-        [
-            table("Intent", intent_rows, ["classifier", "acc", "acc 95% CI", "macro-F1", "F1 CI"]),
+        triage_rows = [
+            (name, v["precision"], v["recall"], v["f1"], v["unsafe_auto_rate"], v["auto_coverage"])
+            for name, v in sorted(m["triage"].items())
+        ]
+        reply_rows = [
+            (name, v["overall"], v["grounded"], v["resolves"], v["tone"], v["safe"])
+            for name, v in sorted(m["reply"].items())
+            if isinstance(v, dict) and "overall" in v
+        ]
+        pair = m["reply"]["pairwise_agent_vs_nearest_reply"]
+        out += [
+            f"\n## {split} ({m['rows']} rows)",
+            table("Intent", intent_rows, ["classifier", "acc", "acc 95% CI", "macro-F1"]),
             table(
                 "Triage (escalate)",
                 triage_rows,
@@ -328,15 +392,12 @@ def report(m):
                 reply_rows,
                 ["system", "overall", "grounded", "resolves", "tone", "safe"],
             ),
-            table(
-                "Coverage vs risk",
-                curve_rows,
-                ["confidence threshold", "auto_coverage", "unsafe_auto_rate"],
-            ),
             f"\nPairwise agent vs nearest_reply: {pair['win']} win / {pair['tie']} tie "
             f"/ {pair['loss']} loss",
+            f"Judge vs human: spearman {m['judge'].get('spearman')} kappa "
+            f"{m['judge'].get('quadratic_kappa')} within1 {m['judge'].get('within_one_agreement')}",
         ]
-    )
+    return "\n".join(out)
 
 
 if __name__ == "__main__":

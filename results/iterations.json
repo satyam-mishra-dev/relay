@@ -1,0 +1,38 @@
+[
+  {
+    "version": "v1",
+    "changes": [
+      "baseline: sonnet agent with top-5 retrieval, confidence<0.6 hard gate, judge evidence = top-3 retrieved replies"
+    ],
+    "all": {
+      "intent_acc": 0.79,
+      "agent_macro_f1": 0.7981,
+      "llm_intent_acc": 0.83,
+      "unsafe_auto_rate": 0.5263,
+      "auto_coverage": 0.84,
+      "judge_overall_agent": 4.3008,
+      "judge_overall_nearest": 3.8618,
+      "judge_kappa": 0.4546
+    },
+    "dev": {
+      "intent_acc": 0.8,
+      "agent_macro_f1": 0.7801,
+      "llm_intent_acc": 0.8417,
+      "unsafe_auto_rate": 0.5385,
+      "auto_coverage": 0.85,
+      "judge_overall_agent": 4.2605,
+      "judge_overall_nearest": 3.9223,
+      "judge_kappa": 0.4355
+    },
+    "test": {
+      "intent_acc": 0.775,
+      "agent_macro_f1": 0.7746,
+      "llm_intent_acc": 0.8125,
+      "unsafe_auto_rate": 0.5,
+      "auto_coverage": 0.825,
+      "judge_overall_agent": 4.3622,
+      "judge_overall_nearest": 3.7719,
+      "judge_kappa": 0.4744
+    }
+  }
+]
