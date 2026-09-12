@@ -73,7 +73,7 @@ def _api(system, user, model, max_tokens):
 
 
 def _cli(system, user, model, max_tokens):
-    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "ANTHROPIC_API_KEY")}
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     out = subprocess.run(
         [
             "claude", "-p",

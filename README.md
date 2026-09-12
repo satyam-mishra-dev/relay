@@ -50,7 +50,7 @@ uv run python -m relay.agent "I cancelled last month but you charged me again to
  "action": "escalate", "reason": "account_action", "evidence": [2644865, 3169, 59941, 1144536, 1527398]}
 ```
 
-`make eval` re-runs the whole harness live, using the cache for anything already seen. Two LLM backends exist: the Anthropic API when `ANTHROPIC_API_KEY` is set, and the Claude Code CLI (`claude -p`) otherwise, selectable with `RELAY_BACKEND=api|cli`. The API path meters every response against the price table and refuses to run once cumulative spend in `data/cache/spend.json` reaches `RELAY_BUDGET_USD` (default $1.00). Stable system prompts are marked for prompt caching. Every response is cached on disk by a hash of model, system prompt and user prompt, so re-running anything already evaluated costs nothing.
+`make eval` re-runs the whole harness live, using the cache for anything already seen. Two LLM backends exist: the Anthropic API when `ANTHROPIC_API_KEY` is set, and the `claude` command-line tool otherwise, selectable with `RELAY_BACKEND=api|cli`. The API path meters every response against the price table and refuses to run once cumulative spend in `data/cache/spend.json` reaches `RELAY_BUDGET_USD` (default $1.00). Stable system prompts are marked for prompt caching. Every response is cached on disk by a hash of model, system prompt and user prompt, so re-running anything already evaluated costs nothing.
 
 Rebuilding the data from scratch needs the 516 MB raw file from Kaggle (or its Hugging Face mirror) at `data/raw/twcs.csv`, then `make data`. That step is not needed for reproduction: the brand subsample is committed.
 
@@ -278,7 +278,7 @@ The headline is "zero missed escalations at 78% coverage". Reasons not to take i
 - Rubric calibrated on 30 rated rows, reported on the other 30, because 60 rows do not allow a proper split and reporting in-sample agreement would be misleading.
 - The "self-consistency" check is reported as prompt-perturbation stability. With a response cache, a literal repeat is trivially identical.
 - LLM cache is committed (29 MB) so that reproduction needs no credentials. CI reproduces and diffs the metrics file on every push.
-- The CLI backend runs `claude -p` with `--setting-sources ""` and no tools. Without that flag the subprocess inherits the developer machine's local Claude Code hooks and settings, and 12 early classifier responses showed it in their text. Those entries were deleted and regenerated with the flag; the metrics file did not change, because every one of them had already fallen back to `other` and only one was a golden row.
+- The CLI backend runs `claude -p` with `--setting-sources ""` and no tools. Without that flag the subprocess inherits the developer machine's local `claude` hooks and settings, and 12 early classifier responses showed it in their text. Those entries were deleted and regenerated with the flag; the metrics file did not change, because every one of them had already fallen back to `other` and only one was a golden row.
 - API spend is metered with a hard $1 cap. Total API spend for this repo: $0.0001 (one verification call). Every bulk run went through the CLI backend.
 - Bootstrap CIs pin the label set per resample so that a resample missing a class does not average over fewer classes.
 - Banking77 not used; the intents had to come from this brand's traffic.
