@@ -25,7 +25,7 @@ uv sync --frozen
 make reproduce
 ```
 
-`make reproduce` recomputes every metric from the committed LLM cache (`data/cache`, 6,605 prompt/response pairs) and fails loudly if any prompt is missing. It takes about 15 seconds after the dependency sync and writes `results/metrics.json`, `results/errors.jsonl`, and a table to stdout. CI runs the same command and fails if the metrics file drifts.
+`make reproduce` recomputes every metric from the committed LLM cache (`data/cache`, 6,595 prompt/response pairs) and fails loudly if any prompt is missing. It takes about 15 seconds after the dependency sync and writes `results/metrics.json`, `results/errors.jsonl`, and a table to stdout. CI runs the same command and fails if the metrics file drifts.
 
 To handle a new message live:
 
@@ -96,7 +96,8 @@ tweet ──> clean ──> TF-IDF retrieval over 11,679 past threads ──> to
                                                           one Claude Sonnet 5 call (JSON)
                                                                         │
                         hard rules override the model's action ◄────────┘
-                        (human-channel reply, abuse, repeat contact, phishing, no grounding, unparseable)
+                        (reply routes to a human channel, billing dispute, security or legal,
+                         abuse at staff, repeat contact, no grounding, no request, unparseable)
                                                                         │
                                                                         ▼
                      {intent, confidence, reply, action, reason, evidence ids}
@@ -234,6 +235,8 @@ Real rows from `results/errors.jsonl` (v2) and the blind rating sheet.
 
 5. **Stated prior effort ignored.** "Been tryin the last two days... Done all troubleshooting suggested and still not working" got "Let's try: <link>" in v1. "I've called twice now" got a generic apology. Hypothesis: retrieval returns the standard troubleshooting reply as evidence and the model follows evidence over the tweet. The v2 `repeat_unresolved` rule now escalates the explicit cases, at the cost of 4 false escalations where "no one was there" describes chat wait time, not a failed resolution.
 
+6. **The tweet hijacks the task.** The standalone intent classifier has a short system prompt, and on 12 of roughly 3,800 classifier calls the model answered the customer instead of labelling them: "is this legit?" about a verification email produced phishing advice, and a request for show recommendations produced a list of shows. Each of these parses as no label and falls back to `other` with confidence 0. The agent prompt, which carries evidence and a fuller role, did not break on the same tweets. Hypothesis: a bare labelling instruction is weaker than a question addressed directly to "you". A schema-constrained output would remove this class entirely.
+
 The baseline's own dominant failure is worth naming because it explains the pairwise result: the nearest reply is often a fluent answer to a different tweet, complete with someone else's first name ("Hey, Antonio!"). Lexical similarity finds tweets about the same show or the same device, not the same problem.
 
 ## What is misleading about the headline number
@@ -275,6 +278,7 @@ The headline is "zero missed escalations at 78% coverage". Reasons not to take i
 - Rubric calibrated on 30 rated rows, reported on the other 30, because 60 rows do not allow a proper split and reporting in-sample agreement would be misleading.
 - The "self-consistency" check is reported as prompt-perturbation stability. With a response cache, a literal repeat is trivially identical.
 - LLM cache is committed (29 MB) so that reproduction needs no credentials. CI reproduces and diffs the metrics file on every push.
+- The CLI backend runs `claude -p` with `--setting-sources ""` and no tools. Without that flag the subprocess inherits the developer machine's local Claude Code hooks and settings, and 12 early classifier responses showed it in their text. Those entries were deleted and regenerated with the flag; the metrics file did not change, because every one of them had already fallen back to `other` and only one was a golden row.
 - API spend is metered with a hard $1 cap. Total API spend for this repo: $0.0001 (one verification call). Every bulk run went through the CLI backend.
 - Bootstrap CIs pin the label set per resample so that a resample missing a class does not average over fewer classes.
 - Banking77 not used; the intents had to come from this brand's traffic.

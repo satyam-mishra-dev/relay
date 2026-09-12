@@ -83,6 +83,7 @@ def _cli(system, user, model, max_tokens):
             "--tools", "",
             "--no-session-persistence",
             "--strict-mcp-config",
+            "--setting-sources", "",
         ],
         input=user, capture_output=True, text=True, env=env, check=True, timeout=300,
     )
