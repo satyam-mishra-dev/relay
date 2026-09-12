@@ -34,5 +34,43 @@
       "judge_overall_nearest": 3.7719,
       "judge_kappa": 0.4744
     }
+  },
+  {
+    "version": "v2",
+    "changes": [
+      "triage policy v2: explicit account-access escalation policy, six-reason enum, hard rule escalating replies that route to phone/chat/DM, confidence gate removed",
+      "intent definitions v2: sharpened feature_question, content_availability, content_request, product_feedback (tfidf_lr still trained on v1 weak labels)",
+      "judge v2: evidence = retrieved replies 2-4 so the nearest_reply baseline is not its own evidence, plus wrong-customer/wrong-title scores 1 on grounded and resolves"
+    ],
+    "all": {
+      "intent_acc": 0.82,
+      "agent_macro_f1": 0.8148,
+      "llm_intent_acc": 0.855,
+      "unsafe_auto_rate": 0.0,
+      "auto_coverage": 0.78,
+      "judge_overall_agent": 4.3475,
+      "judge_overall_nearest": 2.9962,
+      "judge_kappa": 0.6569
+    },
+    "dev": {
+      "intent_acc": 0.7833,
+      "agent_macro_f1": 0.7601,
+      "llm_intent_acc": 0.8417,
+      "unsafe_auto_rate": 0.0,
+      "auto_coverage": 0.75,
+      "judge_overall_agent": 4.3187,
+      "judge_overall_nearest": 3.0354,
+      "judge_kappa": 0.6625
+    },
+    "test": {
+      "intent_acc": 0.875,
+      "agent_macro_f1": 0.8486,
+      "llm_intent_acc": 0.875,
+      "unsafe_auto_rate": 0.0,
+      "auto_coverage": 0.825,
+      "judge_overall_agent": 4.3906,
+      "judge_overall_nearest": 2.9375,
+      "judge_kappa": 0.6429
+    }
   }
 ]
