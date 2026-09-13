@@ -14,7 +14,7 @@ def index(rows=None):
 def similar(text, k=5, built=None):
     rows, vectorizer, matrix = built if built else index()
     scores = linear_kernel(vectorizer.transform([text]), matrix)[0]
-    top = scores.argsort()[::-1][:k]
+    top = sorted(range(len(scores)), key=lambda i: (-scores[i], rows[i]["id"]))[:k]
     return [
         {
             "id": rows[i]["id"],

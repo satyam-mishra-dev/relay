@@ -25,7 +25,7 @@ uv sync --frozen
 make reproduce
 ```
 
-`make reproduce` recomputes every metric from the committed LLM cache (`data/cache`, 6,595 prompt/response pairs) and fails loudly if any prompt is missing. It takes about 15 seconds after the dependency sync and writes `results/metrics.json`, `results/errors.jsonl`, and a table to stdout. CI runs the same command and fails if the metrics file drifts.
+`make reproduce` recomputes every metric from the committed LLM cache (`data/cache`, 6,595 prompt/response pairs) and fails loudly if any prompt is missing. It takes about 15 seconds after the dependency sync and writes `results/metrics.json`, `results/errors.jsonl`, and a table to stdout. CI runs the same command and fails if the metrics file drifts. Retrieval and the trained baseline are not recomputed offline: their outputs are committed alongside the model responses, because TF-IDF score ties and BLAS differences order results differently across platforms and would change the cached prompts.
 
 To handle a new message live:
 
@@ -279,6 +279,7 @@ The headline is "zero missed escalations at 78% coverage". Reasons not to take i
 - The "self-consistency" check is reported as prompt-perturbation stability. With a response cache, a literal repeat is trivially identical.
 - LLM cache is committed (29 MB) so that reproduction needs no credentials. CI reproduces and diffs the metrics file on every push.
 - The CLI backend runs `claude -p` with `--setting-sources ""` and no tools. Without that flag the subprocess inherits the developer machine's local `claude` hooks and settings, and 12 early classifier responses showed it in their text. Those entries were deleted and regenerated with the flag; the metrics file did not change, because every one of them had already fallen back to `other` and only one was a golden row.
+- `make reproduce` recomputes metrics from committed system outputs only. The first CI run on Linux missed the judge cache because exact TF-IDF score ties sort differently across platforms; retrieval now tie-breaks on thread id and the evaluation reads the evidence ids the agent actually saw.
 - API spend is metered with a hard $1 cap. Total API spend for this repo: $0.0001 (one verification call). Every bulk run went through the CLI backend.
 - Bootstrap CIs pin the label set per resample so that a resample missing a class does not average over fewer classes.
 - Banking77 not used; the intents had to come from this brand's traffic.

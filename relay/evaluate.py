@@ -1,4 +1,5 @@
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from relay.agent import MIN_EVIDENCE_SCORE, hard_reason
 from relay.data import corpus, is_english
 from relay.golden import AGENT_OUTPUTS, read_jsonl, write_jsonl
 from relay.intents import CLASSIFIERS, weak_training_set
-from relay.judge import agreed, compare_details, evidence_for, score_many
+from relay.judge import agreed, compare_details, score_many
 from relay.retrieve import index, similar
 
 GOLDEN = Path("data/golden/golden.jsonl")
@@ -19,6 +20,7 @@ HUMAN_RATINGS = Path("data/golden/reply_ratings_human.jsonl")
 METRICS = Path("results/metrics.json")
 ERRORS = Path("results/errors.jsonl")
 ITERATIONS = Path("results/iterations.json")
+PREDICTIONS = Path("results/predictions.json")
 CALIBRATION = 30
 RESAMPLES = 1000
 THRESHOLDS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -135,15 +137,43 @@ def agreement(human, judge):
     }
 
 
-def rating_scores(built):
+def offline():
+    return bool(os.environ.get("RELAY_OFFLINE"))
+
+
+def baselines(golden, train, texts, ids, built):
+    names = ("keywords", "majority", "tfidf_lr")
+    if offline():
+        saved = json.loads(PREDICTIONS.read_text())
+        return (
+            {name: {int(i): v for i, v in saved[name].items()} for name in names},
+            {int(i): v for i, v in saved["rules_only"].items()},
+        )
+    predictions = {
+        name: dict(zip(ids, CLASSIFIERS[name](train, texts), strict=True)) for name in names
+    }
+    rules = dict(zip(ids, rules_only(golden, built), strict=True))
+    PREDICTIONS.parent.mkdir(parents=True, exist_ok=True)
+    PREDICTIONS.write_text(
+        json.dumps(
+            {name: {str(i): v for i, v in pred.items()} for name, pred in predictions.items()}
+            | {"rules_only": {str(i): v for i, v in rules.items()}},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    return predictions, rules
+
+
+def rating_scores(evidence):
     sheet = read_jsonl(RATINGS)
     agent_side = {r["id"]: r["agent_is"] for r in read_jsonl(RATINGS_KEY)}
     human_rows = {r["id"]: r for r in read_jsonl(HUMAN_RATINGS)}
     items, rated = [], []
     for position, row in enumerate(sheet):
-        evidence = evidence_for(row["customer"], built)
         for side in ("a", "b"):
-            items.append((row["customer"], evidence, row[f"reply_{side}"]))
+            items.append((row["customer"], evidence[row["id"]], row[f"reply_{side}"]))
             rated.append(
                 {
                     "id": row["id"],
@@ -188,7 +218,7 @@ def judge_block(rated, consistency, flip_rate):
     }
 
 
-def split_block(rows, outputs, predictions, scored, details, rated, consistency, built):
+def split_block(rows, outputs, predictions, scored, details, rated, consistency, rules):
     ids = [r["id"] for r in rows]
     index_of = {r["id"]: i for i, r in enumerate(rows)}
     truth = [r["intent"] for r in rows]
@@ -209,7 +239,7 @@ def split_block(rows, outputs, predictions, scored, details, rated, consistency,
         "triage": {
             "escalate_all": triage_metrics(should_escalate, [True] * len(rows)),
             "auto_all": triage_metrics(should_escalate, [False] * len(rows)),
-            "rules_only": triage_metrics(should_escalate, rules_only(rows, built)),
+            "rules_only": triage_metrics(should_escalate, [rules[i] for i in ids]),
             "agent": triage_metrics(
                 should_escalate, [outputs[i]["action"] == "escalate" for i in ids]
             ),
@@ -251,23 +281,20 @@ def round_floats(value, places=4):
 def main():
     golden = read_jsonl(GOLDEN)
     outputs = {row["id"]: row for row in read_jsonl(AGENT_OUTPUTS)}
-    built = index()
-    train = weak_training_set()
+    rows = corpus()
+    built = None if offline() else index(rows)
+    train = None if offline() else weak_training_set()
     texts = [g["customer"] for g in golden]
     ids = [g["id"] for g in golden]
 
-    predictions = {
-        name: dict(zip(ids, fn(train, texts), strict=True))
-        for name, fn in sorted(CLASSIFIERS.items())
-    }
+    predictions, rules = baselines(golden, train, texts, ids, built)
+    predictions["llm"] = dict(zip(ids, CLASSIFIERS["llm"](train, texts), strict=True))
     predictions["agent"] = {i: outputs[i]["intent"] for i in ids}
 
-    canned = Counter(r["brand_reply"] for r in corpus()).most_common(1)[0][0]
-    evidence = {i: evidence_for(g["customer"], built) for i, g in zip(ids, golden, strict=True)}
-    nearest = {
-        i: similar(g["customer"], 1, built)[0]["brand_reply"]
-        for i, g in zip(ids, golden, strict=True)
-    }
+    canned = Counter(r["brand_reply"] for r in rows).most_common(1)[0][0]
+    reply_of = {r["id"]: r["brand_reply"] for r in rows}
+    evidence = {i: [reply_of[e] for e in outputs[i]["evidence"][1:4]] for i in ids}
+    nearest = {i: reply_of[outputs[i]["evidence"][0]] for i in ids}
     replies = {
         "agent": {i: outputs[i]["reply"] for i in ids},
         "canned": {i: canned for i in ids},
@@ -296,13 +323,13 @@ def main():
             strict=True,
         )
     )
-    rated, consistency = rating_scores(built)
+    rated, consistency = rating_scores(evidence)
 
     metrics = {"brand": "hulu_support", "canned_reply": canned, "golden_rows": len(golden)}
     for name, stratum in SPLITS.items():
-        rows = [g for g in golden if stratum is None or g["sample_stratum"] == stratum]
+        subset = [g for g in golden if stratum is None or g["sample_stratum"] == stratum]
         metrics[name] = split_block(
-            rows, outputs, predictions, scored, details, rated, consistency, built
+            subset, outputs, predictions, scored, details, rated, consistency, rules
         )
     metrics = round_floats(metrics)
     METRICS.parent.mkdir(parents=True, exist_ok=True)

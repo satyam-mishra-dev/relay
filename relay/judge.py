@@ -1,5 +1,4 @@
 from relay.llm import complete_many, parse_json
-from relay.retrieve import similar
 
 DIMENSIONS = ("grounded", "resolves", "tone", "safe")
 
@@ -63,10 +62,6 @@ four dimensions.
 
 Output strict JSON only, no prose outside it:
 {"winner": "A"|"B"|"tie", "reason": "<one sentence>"}"""
-
-
-def evidence_for(customer, built):
-    return [hit["brand_reply"] for hit in similar(customer, 4, built)[1:]]
 
 
 def shown(customer, evidence):
